@@ -1,0 +1,84 @@
+<style>
+.small-code pre code {
+  font-size: 0.75em;
+}
+</style>
+
+
+Predicting ratings from    review text
+========================================================
+author: Vulpinae
+date: November 20, 2015
+
+Introduction
+========================================================
+<small>
+- Nowadays, people decide more and more on reviews from other visitors where to visit. Saving time by looking at star ratings rather than the whole review text.
+- Star ratings are subjective, people can use the same words to describe their experience, but still give different ratings.
+- This analysis focuses on finding reviews where the review text does not match the star rating, by predicting review stars from the review text alone and identifying the mismatches. 
+- Words that are frequently used differ between star ratings. Below are wordclouds of the most frequent words from one star rating reviews (left) and five star rating reviews (right).
+  
+```{r wordcloud2, echo=FALSE, warning=FALSE, message=FALSE, fig.height=3, fig.width=3}
+library(wordcloud)   
+
+dtms.matrix<-readRDS("dtm.RDS")
+rrv<-readRDS("rrv_10k.RDS")
+
+# Only 1 and 5 star reviews 
+star1<-rrv$stars==1 
+star5<-rrv$stars==5 
+dtm_s1<-dtms.matrix[star1,]
+dtm_s5<-dtms.matrix[star5,]
+
+# Wordcloud for 1 star review
+freq1 <- colSums(as.matrix(dtm_s1)) # Find word frequencies   
+dark2 <- brewer.pal(6, "Dark2")   
+wordcloud(names(freq1), freq1, max.words=25, rot.per=0.2, colors=dark2)    
+
+# Wordcloud for 5 star review
+freq5 <- colSums(as.matrix(dtm_s5)) # Find word frequencies   
+dark2 <- brewer.pal(6, "Dark2")   
+wordcloud(names(freq5), freq5, max.words=25, rot.per=0.2, colors=dark2)    
+
+```
+</small>
+
+Data and methods
+========================================================
+<small>
+- The data originates from the from the Yelp Dataset Challenge round 6 [http://www.yelp.com/dataset_challenge].
+- A weighted sample of 10.000 reviews from Las Vegas restaurants are taken so that each star rating has the same occurance. The data is split in an analysis sample (70%) and a validation sample (30%).
+- The review text is processed by standard text mining techniques.
+- Features are generated from the processed review text by looking at the frequency of words in a text (bag of words). Two other techniques are used: adjecent words (bigrams) and adjectives.
+- For each of the three methods four different number of features are generated (100, 150, 250 and 500).
+- A self-built classifier is used: For each star rating a logistic regression model is estimated. A review is classified as the star for which the model prediction is highest.
+</small>
+
+Results
+========================================================
+<small>
+- Evaluation is done by accuracy: which % of predictions is correct?
+- The best classifier is the simple word with 500 features. 
+
+```{r kable4, echo=FALSE, warning=FALSE, message=FALSE, fig.height=3}
+y1<-c("Single words 100 features", "Single words 150 features", "Single words 250 features" , "Single words 500 features", "Bigrams 100 features", "Bigrams 150 features", "Bigrams 250 features" , "Bigrams 500 features", "Adjectives 100 features", "Adjectives 150 features", "Adjectives 250 features" , "Adjectives 500 features")
+y2<-c("0.471", "0.500", "0.551", "0.626", "0.389", "0.423", "0.475", "0.544", "0.451", "0.466", "0.502", "0.553")
+y3<-c("0.430", "0.453", "0.470", "0.489", "0.364", "0.377", "0.392", "0.408", "0.414", "0.425", "0.421", "0.425")
+y<-t(rbind(y1,y2, y3))
+colnames(y)<-c("Classifier", "Accuracy analysis set", "Accuracy validation set")
+library(knitr)
+kable(y)
+```
+</small>
+
+Conclusions
+========================================================
+<small>
+* Single words perform better in predicting stars from review text than bigrams and adjectives.
+* As the number of features go up the accuracy in the validation sample improves, but also overfitting increases (difference between accuracy in analysis and validation sample).
+* The best classifier is the simple word with 500 features. 48.9% of new reviews are classified correctly. Discrepant reviews can be identified if the number of predicted stars differ 3 or more from the actual stars.
+* Future research areas include 
+  + using bigger samples with more features  
+  + combining features from different feature generating methods, preferable with bigger sample sizes to         avoid overfitting   
+  + using ensembling from a set of classifiers
+</small>
